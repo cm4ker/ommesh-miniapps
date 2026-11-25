@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "example.p2p-ping",
+  "appId": 65281,
+  "version": "1.0.0",
+  "name": {
+    "en": "P2P Ping Pong",
+    "ru": "P2P Пинг-Понг"
+  },
+  "description": {
+    "en": "Minimal MCRS v2 binary peer-to-peer mini-app template with background worker and ACK tracking.",
+    "ru": "Минимальный шаблон P2P мини-приложения на MCRS v2 с фоновым воркером и подтверждением доставки ACK."
+  },
+  "author": "Your Name",
+  "scope": "p2p",
+  "minProtocol": 2,
+  "permissions": ["peerData", "storage", "notifications"],
+  "backgroundNotices": {
+    "opcodeMask": 255,
+    "fallback": { "en": "P2P update", "ru": "Событие P2P" },
+    "labels": {
+      "1": { "en": "Ping received", "ru": "Получен пинг" },
+      "2": { "en": "Pong received", "ru": "Получен понг" }
+    }
+  }
+}

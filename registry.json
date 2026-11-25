@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "ranges": {
+    "standalone": "0x0000",
+    "catalog": "0x0100..0xFEFF",
+    "developerSideload": "0xFF00..0xFFFF"
+  },
+  "apps": [
+    {
+      "id": "ommesh.chess",
+      "dir": "apps/chess",
+      "appId": 256,
+      "appIdHex": "0x0100",
+      "scope": "p2p",
+      "verified": true
+    },
+    {
+      "id": "ommesh.lora-calc",
+      "dir": "apps/lora-calc",
+      "appId": 0,
+      "appIdHex": "0x0000",
+      "scope": "standalone",
+      "verified": true
+    }
+  ]
+}

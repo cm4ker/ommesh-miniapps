@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "example.standalone",
+  "appId": 0,
+  "version": "1.0.0",
+  "name": {
+    "en": "Signal Notes",
+    "ru": "Заметки эфира"
+  },
+  "description": {
+    "en": "Minimal offline standalone mini-app template using local storage and Ommesh themes.",
+    "ru": "Минимальный шаблон офлайн мини-приложения с локальным хранилищем и темами Ommesh."
+  },
+  "author": "Your Name",
+  "scope": "standalone",
+  "permissions": ["storage"]
+}

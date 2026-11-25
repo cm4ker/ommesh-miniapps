@@ -1,0 +1,14 @@
+{
+  "name": "ommesh-miniapps",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Official catalog, source code, templates and packaging CLI for Ommesh LoRa mini-apps (.omapp)",
+  "scripts": {
+    "build": "node scripts/pack.mjs",
+    "validate": "node scripts/validate.mjs",
+    "test": "node --test apps/*/test.mjs scripts/*.test.mjs",
+    "new": "node scripts/new-app.mjs",
+    "sync-ommesh": "node scripts/sync-ommesh.mjs"
+  }
+}

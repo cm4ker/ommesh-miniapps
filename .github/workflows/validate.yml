@@ -1,0 +1,25 @@
+name: Validate & Pack Mini-Apps
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate manifests, templates and registry
+        run: npm run validate
+      - name: Run mini-app tests
+        run: npm test
+      - name: Build .omapp bundles and catalog.json
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omapp-catalog
+          path: dist/

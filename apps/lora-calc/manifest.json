@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "ommesh.lora-calc",
+  "appId": 0,
+  "version": "1.0.1",
+  "name": {
+    "ru": "Калькулятор LoRa",
+    "en": "LoRa Calculator"
+  },
+  "description": {
+    "ru": "Офлайн-расчёт эфирного времени и зоны Френеля без доступа к радио и контактам",
+    "en": "Offline LoRa airtime and Fresnel zone calculator with zero permissions"
+  },
+  "author": "Ommesh",
+  "scope": "standalone",
+  "permissions": []
+}
