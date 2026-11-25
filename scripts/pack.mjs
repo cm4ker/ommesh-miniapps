@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
  * Packs every mini-app under `apps/<dir>` into a validated self-contained
- * `dist/<manifest.id>.omapp` bundle and generates `dist/catalog.json`.
+ * `dist/<manifest.id>.omapp` bundle, generates `dist/catalog.json` (with
+ * SHA-256 digests and inline monochrome icons for the remote Ommesh store),
+ * and emits a minimal static `dist/index.html` + `.nojekyll` for GitHub Pages.
  *
  * Supports local file inlining so authors can split JS/CSS cleanly:
  * - In HTML: `<script src="./file.js"></script>` and `<link rel="stylesheet" href="./file.css" />`
  * - In JS/HTML: `/* @include ./file.js *\/`
  */
 
+import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -93,7 +96,82 @@ export function packAppDir(appDir) {
   if (bytes.length > MAX_OMAPP_BYTES) {
     throw new Error(`${manifest.id}: bundle is ${bytes.length} bytes (max ${MAX_OMAPP_BYTES})`);
   }
-  return { pkg, bytes };
+  const sha256 = createHash("sha256").update(bytes).digest("hex");
+  return { pkg, bytes, sha256 };
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderCatalogIndexHtml(catalog, updatedAt) {
+  const rows = catalog
+    .map((item) => {
+      const nameRu = pickText(item.name, "ru");
+      const nameEn = pickText(item.name, "en");
+      const title = nameRu && nameEn && nameRu !== nameEn ? `${nameRu} / ${nameEn}` : (nameRu || nameEn);
+      const desc = pickText(item.description, "ru") || pickText(item.description, "en");
+      const kb = Math.max(1, Math.round(item.sizeBytes / 1024));
+      const appIdStr = item.appId ? `0x${item.appId.toString(16).padStart(4, "0")}` : "offline";
+      return `      <article class="card">
+        <div class="head">
+          <div class="icon">${item.iconSvg}</div>
+          <div>
+            <h2>${escapeHtml(title)}</h2>
+            <div class="meta"><code>${escapeHtml(item.id)}</code> · v${escapeHtml(item.version)} · ${kb} KB · ${appIdStr}</div>
+          </div>
+        </div>
+        <p>${escapeHtml(desc)}</p>
+        <div class="foot">
+          <a class="btn" href="./${encodeURIComponent(item.file)}" download>Download .omapp</a>
+          <span class="hash" title="SHA-256">${item.sha256.slice(0, 16)}…</span>
+        </div>
+      </article>`;
+    })
+    .join("\n");
+
+  return `<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ommesh Mini-Apps Catalog</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #0f1218; --card: #181c24; --border: #2a3140; --text: #e6ebf4; --muted: #98a2b3; --accent: #5c78e2; }
+    @media (prefers-color-scheme: light) { :root { --bg: #f6f7fa; --card: #ffffff; --border: #e2e6ef; --text: #1b2029; --muted: #5c6575; --accent: #4c68d7; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 18px 48px; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 860px; margin: 0 auto; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    .sub { margin: 0; color: var(--muted); }
+    .sub a { color: var(--accent); text-decoration: none; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .head { display: flex; gap: 12px; align-items: center; }
+    .icon { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex: none; color: var(--accent); }
+    .icon svg { width: 24px; height: 24px; }
+    h2 { margin: 0; font-size: 16px; }
+    .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    p { margin: 0; font-size: 13.5px; color: var(--muted); flex: 1; }
+    .foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 4px; }
+    .btn { display: inline-block; padding: 7px 12px; border-radius: 8px; background: var(--accent); color: #fff; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .hash { font: 11px ui-monospace, Consolas, monospace; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Ommesh Mini-Apps Catalog</h1>
+      <p class="sub">Official LoRa mini-app registry · <a href="./catalog.json">catalog.json</a> · updated ${escapeHtml(updatedAt)}</p>
+    </header>
+    <section class="grid">
+${rows}
+    </section>
+  </main>
+</body>
+</html>
+`;
 }
 
 export function packAll({ write = true } = {}) {
@@ -111,7 +189,7 @@ export function packAll({ write = true } = {}) {
   if (write) mkdirSync(DIST_DIR, { recursive: true });
 
   for (const dir of dirs) {
-    const { pkg, bytes } = packAppDir(dir);
+    const { pkg, bytes, sha256 } = packAppDir(dir);
     const { id, appId, version, name, description, author, scope, permissions, minProtocol } = pkg.manifest;
     if (seenIds.has(id)) throw new Error(`duplicate manifest id: ${id}`);
     seenIds.add(id);
@@ -135,16 +213,21 @@ export function packAll({ write = true } = {}) {
       permissions,
       verified: verifiedIds.has(id),
       sizeBytes: bytes.length,
+      sha256,
+      iconSvg: pkg.iconSvg,
       file,
     });
   }
 
   if (write) {
+    const updatedAt = new Date().toISOString();
     writeFileSync(
       join(DIST_DIR, "catalog.json"),
-      JSON.stringify({ schema: 1, updatedAt: new Date().toISOString(), apps: catalog }, null, 2) + "\n",
+      JSON.stringify({ schema: 1, updatedAt, apps: catalog }, null, 2) + "\n",
       "utf8",
     );
+    writeFileSync(join(DIST_DIR, "index.html"), renderCatalogIndexHtml(catalog, updatedAt), "utf8");
+    writeFileSync(join(DIST_DIR, ".nojekyll"), "", "utf8");
   }
   return catalog;
 }
@@ -152,7 +235,9 @@ export function packAll({ write = true } = {}) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const catalog = packAll({ write: true });
   for (const item of catalog) {
-    console.log(`packed ${item.file} (v${item.version}, ${(item.sizeBytes / 1024).toFixed(1)} KB, appId=0x${item.appId.toString(16).padStart(4, "0")})`);
+    console.log(
+      `packed ${item.file} (v${item.version}, ${(item.sizeBytes / 1024).toFixed(1)} KB, appId=0x${item.appId.toString(16).padStart(4, "0")}, sha256=${item.sha256.slice(0, 12)})`,
+    );
   }
-  console.log(`wrote dist/catalog.json (${catalog.length} apps)`);
+  console.log(`wrote dist/catalog.json & dist/index.html (${catalog.length} apps)`);
 }

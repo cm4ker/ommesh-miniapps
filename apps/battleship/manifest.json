@@ -1,0 +1,67 @@
+{
+  "schema": 1,
+  "id": "ommesh.battleship",
+  "appId": 258,
+  "version": "1.0.0",
+  "name": {
+    "ru": "Морской бой",
+    "en": "Battleship"
+  },
+  "description": {
+    "ru": "Морской бой 10×10 по LoRa с автоответом в фоне, проверкой честности (commit-reveal), синхронизацией и чатом партии",
+    "en": "10×10 Battleship over LoRa with automatic background hit/miss replies, commit-reveal fair play, two-way sync and game chat"
+  },
+  "author": "Ommesh",
+  "scope": "p2p",
+  "minProtocol": 2,
+  "permissions": [
+    "peerData",
+    "storage",
+    "notifications"
+  ],
+  "backgroundNotices": {
+    "opcodeMask": 31,
+    "fallback": {
+      "ru": "Событие в Морском бое",
+      "en": "Battleship update"
+    },
+    "labels": {
+      "1": {
+        "ru": "Приглашение в Морской бой",
+        "en": "Battleship invitation"
+      },
+      "2": {
+        "ru": "Приглашение принято",
+        "en": "Invitation accepted"
+      },
+      "3": {
+        "ru": "Приглашение отклонено",
+        "en": "Invitation declined"
+      },
+      "4": {
+        "ru": "Соперник готов к бою",
+        "en": "Opponent is ready"
+      },
+      "5": {
+        "ru": "Выстрел соперника",
+        "en": "Incoming shot"
+      },
+      "6": {
+        "ru": "Результат выстрела",
+        "en": "Shot result"
+      },
+      "7": {
+        "ru": "Событие в партии",
+        "en": "Game action"
+      },
+      "8": {
+        "ru": "Сообщение в партии",
+        "en": "Game chat message"
+      },
+      "9": {
+        "ru": "Флот соперника раскрыт",
+        "en": "Opponent fleet revealed"
+      }
+    }
+  }
+}

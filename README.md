@@ -16,6 +16,8 @@ Mini-apps run inside Ommesh (desktop, web, Android and iOS) in a strict `sandbox
 | Mini-App | ID | `appId` | Scope | Permissions | Description |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **LoRa Chess** | `ommesh.chess` | `0x0100` | `p2p` | `peerData`, `storage`, `notifications` | FIDE peer-to-peer chess over MCRS v2 (1 AES block per move, two-way resync, in-game chat, background worker) |
+| **Checkers** | `ommesh.checkers` | `0x0101` | `p2p` | `peerData`, `storage`, `notifications` | Russian draughts (8×8) over LoRa with mandatory captures, flying kings, 1 AES block per move and in-game chat |
+| **Battleship** | `ommesh.battleship` | `0x0102` | `p2p` | `peerData`, `storage`, `notifications` | 10×10 Battleship over LoRa with automatic background hit/miss replies, SHA-256 commit-reveal fair play and in-game chat |
 | **LoRa Calculator** | `ommesh.lora-calc` | `0x0000` | `standalone` | *(none)* | Offline LoRa airtime and Fresnel zone calculator |
 
 ## Quickstart
@@ -34,6 +36,8 @@ npm run build
 ```
 
 Then install any generated `dist/<id>.omapp` in Ommesh via **Apps → Store → Load .omapp** (you can test P2P apps without hardware in **Demo mode**).
+
+Pushes to `master` automatically publish `dist/catalog.json` (with SHA-256 digests and monochrome icons) and all `.omapp` bundles to GitHub Pages (`https://cm4ker.github.io/ommesh-miniapps/`), which the Ommesh Store reads directly to install new mini-apps and deliver updates without updating Ommesh itself.
 
 ## Create a New Mini-App
 

@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "id": "ommesh.checkers",
+  "appId": 257,
+  "version": "1.0.0",
+  "name": {
+    "ru": "Шашки",
+    "en": "Checkers"
+  },
+  "description": {
+    "ru": "Русские шашки 8×8 по LoRa с обязательным боем и летающими дамками (1 AES-блок на ход, двусторонний ресинк и чат партии)",
+    "en": "Russian draughts (8×8) over LoRa with mandatory captures and flying kings (1 AES block per move, two-way resync and game chat)"
+  },
+  "author": "Ommesh",
+  "scope": "p2p",
+  "minProtocol": 2,
+  "permissions": [
+    "peerData",
+    "storage",
+    "notifications"
+  ],
+  "backgroundNotices": {
+    "opcodeMask": 31,
+    "fallback": {
+      "ru": "Событие в шашках",
+      "en": "Checkers update"
+    },
+    "labels": {
+      "1": {
+        "ru": "Приглашение в шашки",
+        "en": "Checkers invitation"
+      },
+      "2": {
+        "ru": "Приглашение принято",
+        "en": "Invitation accepted"
+      },
+      "3": {
+        "ru": "Приглашение отклонено",
+        "en": "Invitation declined"
+      },
+      "4": {
+        "ru": "Ваш ход",
+        "en": "Your turn"
+      },
+      "5": {
+        "ru": "Событие в партии",
+        "en": "Game action"
+      },
+      "8": {
+        "ru": "Сообщение в партии",
+        "en": "Game chat message"
+      }
+    }
+  }
+}

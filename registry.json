@@ -15,6 +15,22 @@
       "verified": true
     },
     {
+      "id": "ommesh.checkers",
+      "dir": "apps/checkers",
+      "appId": 257,
+      "appIdHex": "0x0101",
+      "scope": "p2p",
+      "verified": true
+    },
+    {
+      "id": "ommesh.battleship",
+      "dir": "apps/battleship",
+      "appId": 258,
+      "appIdHex": "0x0102",
+      "scope": "p2p",
+      "verified": true
+    },
+    {
       "id": "ommesh.lora-calc",
       "dir": "apps/lora-calc",
       "appId": 0,

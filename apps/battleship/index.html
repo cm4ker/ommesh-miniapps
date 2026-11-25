@@ -1,0 +1,1712 @@
+<style>
+  :root {
+    --sea-bg: color-mix(in oklab, var(--accent) 8%, var(--panel));
+    --sea-grid: color-mix(in oklab, var(--border-strong) 68%, transparent);
+    --sea-hover: color-mix(in oklab, var(--accent) 22%, transparent);
+    --ship-fill: color-mix(in oklab, var(--accent) 68%, var(--text));
+    --ship-stroke: color-mix(in oklab, var(--accent) 88%, var(--text));
+    --ship-reveal: color-mix(in oklab, var(--accent) 24%, var(--panel));
+    --hit-bg: color-mix(in oklab, var(--danger) 24%, var(--sea-bg));
+    --sunk-bg: color-mix(in oklab, var(--danger) 42%, var(--panel));
+    --miss-dot: color-mix(in oklab, var(--text) 56%, transparent);
+    --halo-dot: color-mix(in oklab, var(--text) 24%, transparent);
+  }
+  :root[data-appearance="dark"] {
+    --sea-bg: color-mix(in oklab, var(--accent) 7%, var(--bg));
+    --sea-grid: color-mix(in oklab, var(--border-strong) 82%, transparent);
+    --ship-fill: color-mix(in oklab, var(--accent) 52%, var(--text-muted));
+    --ship-stroke: color-mix(in oklab, var(--accent) 76%, var(--text));
+    --hit-bg: color-mix(in oklab, var(--danger) 28%, var(--bg));
+    --sunk-bg: color-mix(in oklab, var(--danger) 44%, var(--bg));
+  }
+  :root[data-look="lcd"] {
+    --sea-bg: var(--bg);
+    --sea-grid: var(--text);
+    --sea-hover: color-mix(in oklab, var(--text) 16%, var(--bg));
+    --ship-fill: var(--text);
+    --ship-stroke: var(--text);
+    --ship-reveal: color-mix(in oklab, var(--text) 20%, var(--bg));
+    --hit-bg: color-mix(in oklab, var(--text) 22%, var(--bg));
+    --sunk-bg: color-mix(in oklab, var(--text) 34%, var(--bg));
+    --miss-dot: var(--text);
+    --halo-dot: color-mix(in oklab, var(--text) 45%, var(--bg));
+  }
+  :root[data-look="classic"] {
+    --sea-bg: var(--elevated);
+    --sea-grid: var(--border-strong);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 276px;
+    gap: 16px;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 14px calc(14px + var(--safe-right, 0px)) calc(16px + var(--safe-bottom, 0px)) calc(14px + var(--safe-left, 0px));
+    min-height: 100%;
+    align-items: start;
+  }
+  @media (max-width: 720px) {
+    .layout {
+      grid-template-columns: 1fr;
+      padding: 12px calc(12px + var(--safe-right, 0px)) calc(16px + var(--safe-bottom, 0px)) calc(12px + var(--safe-left, 0px));
+      gap: 14px;
+    }
+  }
+
+  .main-col { display: flex; flex-direction: column; gap: 10px; align-items: center; min-width: 0; }
+  .bar {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .bar.narrow { max-width: 420px; }
+  .bar strong { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar .turn { color: var(--accent); font-weight: 700; white-space: nowrap; }
+  .bar .turn-win { color: var(--success); font-weight: 700; white-space: nowrap; }
+  .bar .turn-loss { color: var(--danger); font-weight: 700; white-space: nowrap; }
+
+  .board-switch {
+    width: 100%;
+    max-width: 420px;
+    display: none;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+  .boards-grid {
+    width: 100%;
+    max-width: 680px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .boards-grid.single {
+    max-width: 420px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (max-width: 820px) {
+    .board-switch.active { display: grid; }
+    .boards-grid.dual {
+      max-width: 420px;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .boards-grid.dual .board-card.mob-hidden { display: none; }
+    .boards-grid.dual .board-card-head { display: none; }
+    .bar.dual-w, .status-pill.dual-w, .actions.dual-w, .last-event.dual-w { max-width: 420px; }
+  }
+  .last-event {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 11px;
+    border-radius: 9px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .last-event strong { color: var(--text); font-weight: 600; }
+  .last-event.hit { border-color: color-mix(in oklab, var(--warning) 50%, var(--border)); }
+  .last-event.sunk { border-color: color-mix(in oklab, var(--danger) 50%, var(--border)); }
+
+  .board-card {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+  }
+  .board-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .board-card-head strong { color: var(--text); font-size: 12.5px; }
+
+  .fleet-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    align-items: center;
+  }
+  .fleet-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .mini-ship {
+    display: inline-flex;
+    gap: 1.5px;
+    padding: 2px;
+    border-radius: 3px;
+    background: color-mix(in oklab, var(--text) 7%, transparent);
+  }
+  .mini-ship i {
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 1.5px;
+    background: var(--ship-fill);
+  }
+  .mini-ship.sunk { opacity: 0.3; }
+  .mini-ship.sunk i { background: var(--danger); }
+
+  .sea-grid {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: grid;
+    grid-template-columns: 0.72fr repeat(10, minmax(0, 1fr));
+    grid-template-rows: 0.72fr repeat(10, minmax(0, 1fr));
+    background: var(--panel);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 10px;
+    overflow: hidden;
+    user-select: none;
+    touch-action: manipulation;
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--bg) 50%, rgba(0, 0, 0, 0.22));
+  }
+  :root[data-look="lcd"] .sea-grid { border: 2px solid var(--text); box-shadow: none; }
+  :root[data-look="classic"] .sea-grid {
+    border: 2px solid;
+    border-color: var(--border-strong) var(--elevated) var(--elevated) var(--border-strong);
+    box-shadow: inset 1px 1px 0 var(--border);
+  }
+
+  .hdr-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-faint);
+    background: color-mix(in oklab, var(--bg) 65%, var(--panel));
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    line-height: 1;
+  }
+
+  .cell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-right: 1px solid var(--sea-grid);
+    border-bottom: 1px solid var(--sea-grid);
+    background: var(--sea-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    appearance: none;
+    overflow: hidden;
+  }
+  .cell.shootable { cursor: crosshair; }
+  .cell.shootable:hover { background: var(--sea-hover); }
+  .cell.setup-cell { cursor: pointer; }
+  .cell.hit { background: var(--hit-bg); }
+  .cell.sunk { background: var(--sunk-bg); }
+  .cell.last-shot { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.aimed {
+    background: color-mix(in oklab, var(--accent) 28%, var(--sea-bg));
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  .cell.pending-shot {
+    background: color-mix(in oklab, var(--warning) 26%, var(--sea-bg));
+    box-shadow: inset 0 0 0 2px var(--warning);
+  }
+  .cell.join-r { border-right-color: transparent; }
+  .cell.join-b { border-bottom-color: transparent; }
+  .cell.preview-ok { background: color-mix(in oklab, var(--success) 34%, var(--sea-bg)); }
+  .cell.preview-bad { background: color-mix(in oklab, var(--danger) 36%, var(--sea-bg)); }
+
+  .ship-seg {
+    position: absolute;
+    inset: 11%;
+    background: var(--ship-fill);
+    border: 1.5px solid var(--ship-stroke);
+    border-radius: 5px;
+    pointer-events: none;
+  }
+  .ship-seg.h-start { right: -1px; border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .ship-seg.h-mid { left: -1px; right: -1px; border-left: 0; border-right: 0; border-radius: 0; }
+  .ship-seg.h-end { left: -1px; border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .ship-seg.v-start { bottom: -1px; border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .ship-seg.v-mid { top: -1px; bottom: -1px; border-top: 0; border-bottom: 0; border-radius: 0; }
+  .ship-seg.v-end { top: -1px; border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+  .ship-seg.revealed {
+    background: var(--ship-reveal);
+    border-style: dashed;
+    border-color: var(--accent);
+  }
+  .ship-seg.sunk-hull {
+    background: color-mix(in oklab, var(--danger) 36%, var(--panel));
+    border-color: var(--danger);
+  }
+
+  .miss-dot {
+    width: 28%;
+    height: 28%;
+    border-radius: 50%;
+    background: var(--miss-dot);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .halo-dot {
+    width: 16%;
+    height: 16%;
+    border-radius: 50%;
+    background: var(--halo-dot);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .hit-svg {
+    width: 66%;
+    height: 66%;
+    color: var(--danger);
+    pointer-events: none;
+    z-index: 3;
+  }
+  :root[data-look="lcd"] .hit-svg { color: var(--text); }
+  .aim-svg {
+    width: 72%;
+    height: 72%;
+    color: var(--accent);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  .dock-box {
+    width: 100%;
+    max-width: 420px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dock-hint {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .dock-ships {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .dock-btn {
+    padding: 7px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .dock-btn:hover:not(:disabled) { border-color: var(--border-strong); background: var(--hover); }
+  .dock-btn.on { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 16%, var(--bg)); }
+  .dock-btn:disabled { opacity: 0.38; cursor: default; }
+  .dock-pips { display: inline-flex; gap: 2px; }
+  .dock-pips i { display: block; width: 8px; height: 8px; border-radius: 2px; background: var(--ship-fill); }
+
+  .fire-bar {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .status-pill {
+    width: 100%;
+    max-width: 680px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-pill.narrow { max-width: 420px; }
+  .status-pill.ok { border-color: color-mix(in oklab, var(--success) 55%, var(--border)); color: var(--success); }
+  .status-pill.warn { border-color: color-mix(in oklab, var(--warning) 55%, var(--border)); color: var(--warning); }
+  .status-pill.err { border-color: color-mix(in oklab, var(--danger) 55%, var(--border)); color: var(--danger); }
+
+  .actions { width: 100%; max-width: 680px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .actions.narrow { max-width: 420px; }
+  .btn {
+    flex: 1;
+    min-width: 90px;
+    min-height: 38px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px solid var(--border-strong);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn:not(.primary):hover:not(:disabled) { background: var(--hover); }
+  .btn.primary { background: var(--accent); color: var(--accent-contrast); border-color: transparent; }
+  .btn.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.07); }
+  .btn.danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 45%, var(--border)); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  :root[data-look="classic"] .btn {
+    border: 2px solid;
+    border-color: var(--elevated) var(--border-strong) var(--border-strong) var(--elevated);
+    box-shadow: inset -1px -1px 0 var(--border);
+  }
+  :root[data-look="lcd"] .btn { border: 2px solid var(--text); }
+
+  .side {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+  :root[data-look="lcd"] .side { border: 2px solid var(--border-strong); }
+  .side-section { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .side-divider { height: 1px; background: var(--border); margin: 0 -14px; }
+  .side-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .side-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .side-count {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: color-mix(in oklab, var(--text) 9%, transparent);
+    color: var(--text-muted);
+    letter-spacing: 0;
+  }
+  .btn-new {
+    flex: none;
+    white-space: nowrap;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 8px;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-new:hover { filter: brightness(1.07); }
+  :root[data-look="lcd"] .btn-new { border: 2px solid var(--text); }
+
+  .games {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 1px;
+  }
+  .games-empty {
+    padding: 14px 10px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-faint);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+  .g-row {
+    position: relative;
+    text-align: left;
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--bg) 72%, var(--panel));
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font: inherit;
+    transition: background 100ms ease, border-color 100ms ease;
+  }
+  .g-row:hover { background: var(--hover); border-color: var(--border-strong); }
+  .g-row.on {
+    border-color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 13%, var(--bg));
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .g-row .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+  .g-row .peer-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-row .bot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+  .g-row .sub { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-row .gid { font-family: ui-monospace, Consolas, monospace; font-size: 10.5px; color: var(--text-faint); flex: none; }
+  .g-row .top-right { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+  .g-del {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    border: 0;
+    background: transparent;
+    color: var(--text-faint);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .g-del:hover { background: color-mix(in oklab, var(--danger) 18%, transparent); color: var(--danger); }
+
+  .badge { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; line-height: 1.25; }
+  .badge.success { background: color-mix(in oklab, var(--success) 20%, transparent); color: var(--success); }
+  .badge.accent { background: color-mix(in oklab, var(--accent) 20%, transparent); color: var(--accent); }
+  .badge.neutral { background: color-mix(in oklab, var(--text) 10%, transparent); color: var(--text-muted); }
+  .badge.danger { background: color-mix(in oklab, var(--danger) 20%, transparent); color: var(--danger); }
+
+  .log-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 4px 0;
+    font-size: 12px;
+    max-height: 210px;
+    overflow-y: auto;
+  }
+  .moves-empty { padding: 16px 10px; text-align: center; font-size: 12px; color: var(--text-faint); }
+  .log-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 10px;
+  }
+  .log-row:nth-child(even) { background: color-mix(in oklab, var(--text) 3.5%, transparent); }
+  .log-row.latest { background: color-mix(in oklab, var(--accent) 14%, transparent); font-weight: 600; }
+  .log-who { font-size: 11px; color: var(--text-muted); }
+  .log-coord { font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+  .log-res.hit { color: var(--warning); }
+  .log-res.sunk { color: var(--danger); }
+  .log-res.miss { color: var(--text-faint); }
+
+  .seg-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 9px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .seg-tab {
+    height: 30px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .seg-tab:hover { color: var(--text); }
+  .seg-tab.on {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--bg) 45%, rgba(0, 0, 0, 0.2));
+  }
+  .board-switch .seg-tab.on { background: var(--bg); }
+  :root[data-look="lcd"] .seg-tab.on { background: var(--text); color: var(--bg); box-shadow: none; }
+  .seg-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 99px;
+    background: color-mix(in oklab, var(--text) 10%, transparent);
+    color: var(--text-muted);
+    line-height: 1.2;
+  }
+  .seg-pill.hot { background: var(--accent); color: var(--accent-contrast); }
+  :root[data-look="lcd"] .seg-tab.on .seg-pill { background: var(--bg); color: var(--text); }
+
+  .chat-pane { display: flex; flex-direction: column; gap: 8px; }
+  .chat-list {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 8px;
+    height: 196px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  :root[data-keyboard="open"] .chat-list { height: 132px; }
+  .chat-msg {
+    max-width: 86%;
+    padding: 6px 9px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.38;
+    word-break: break-word;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .chat-msg.in {
+    align-self: flex-start;
+    background: var(--bubble-in, var(--panel));
+    color: var(--bubble-text, var(--text));
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
+  }
+  .chat-msg.out {
+    align-self: flex-end;
+    background: var(--bubble-out, color-mix(in oklab, var(--accent) 22%, var(--panel)));
+    color: var(--bubble-text, var(--text));
+    border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border));
+    border-bottom-right-radius: 3px;
+  }
+  :root[data-look="lcd"] .chat-msg { border: 1.5px solid var(--text); }
+  .chat-meta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--bubble-text-muted, var(--text-faint));
+    line-height: 1;
+  }
+  .chat-meta .st-ok { color: var(--success); font-weight: 700; }
+  .chat-meta .st-err { color: var(--danger); font-weight: 700; }
+  .quick-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .quick-chip {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    border-radius: 99px;
+    padding: 4px 9px;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .quick-chip:hover { background: var(--hover); color: var(--text); border-color: var(--border-strong); }
+  .quick-chip:disabled { opacity: 0.45; cursor: default; }
+  .chat-form { display: flex; align-items: center; gap: 6px; scroll-margin-bottom: 16px; }
+  .chat-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 36px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-input:disabled { opacity: 0.45; }
+  .chat-send {
+    flex: none;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 0;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .chat-send:disabled { opacity: 0.45; cursor: default; }
+  .chat-bytes { font-size: 10.5px; color: var(--text-faint); text-align: right; }
+  .chat-bytes.warn { color: var(--warning); }
+  .hidden { display: none !important; }
+  .empty {
+    width: 100%;
+    max-width: 448px;
+    padding: 28px 18px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px dashed var(--border-strong);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .empty p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+  .empty-icon { width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
+</style>
+<div class="layout">
+  <div class="main-col" id="main"></div>
+  <aside class="side">
+    <div class="side-section">
+      <div class="side-head">
+        <h3 class="side-title"><span id="hGames">Games</span><span class="side-count" id="cGames">0</span></h3>
+        <button class="btn-new" id="newBtn">+ New</button>
+      </div>
+      <div class="games" id="gamesList"></div>
+    </div>
+    <div class="side-divider"></div>
+    <div class="side-section">
+      <div class="seg-tabs" role="tablist">
+        <button type="button" class="seg-tab on" id="tabLog" role="tab" aria-selected="true"><span id="hLog">Log</span><span class="seg-pill" id="cLog">0</span></button>
+        <button type="button" class="seg-tab" id="tabChat" role="tab" aria-selected="false"><span id="hChat">Chat</span><span class="seg-pill" id="cChat">0</span></button>
+      </div>
+      <div class="log-box" id="logBox"></div>
+      <div class="chat-pane hidden" id="chatPane">
+        <div class="chat-list" id="chatList"></div>
+        <div class="quick-row" id="quickRow"></div>
+        <div class="chat-form" id="chatForm">
+          <input class="chat-input" id="chatInput" type="text" enterkeyhint="send" autocomplete="off" />
+          <button type="button" class="chat-send" id="chatSend">→</button>
+        </div>
+        <div class="chat-bytes hidden" id="chatBytes"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+<script>
+
+/* @include ./engine.js */
+
+var HIT_SVG = '<svg class="hit-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+var AIM_SVG = '<svg class="aim-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-linecap="round"/></svg>';
+var SHIP_HERO_SVG = '<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16l2.2 3h13.6L21 16H3z"/><path d="M6 16v-3.5h12V16"/><path d="M9.5 12.5V9h5v3.5"/><path d="M12 9V6.5"/><path d="M14.5 10.5l4-1"/><path d="M2.5 21.5c1.6 0 2.4-.9 3.8-.9s2.2.9 3.8.9 2.4-.9 3.8-.9 2.2.9 3.8.9 2.4-.9 3.8-.9"/></svg>';
+
+window.ommeshReady.then(async function (app) {
+  var ru = app.context.locale === "ru";
+  var locale = ru ? "ru" : "en";
+  var cols = ru ? COLS_RU : COLS_EN;
+  var T = ru ? {
+    games: "Партии", newGame: "+ Новая", log: "Залпы", chat: "Чат",
+    noGames: "Партий пока нет", noLog: "Выстрелов пока нет", noChat: "Напишите сопернику — сообщения уйдут по LoRa внутри партии",
+    chatPlaceholder: "Сообщение в партию…", chatQuick: ["👋", "Мимо!", "Есть пробитие! 💥", "Хороший залп!"],
+    deleteGame: "Убрать из списка",
+    emptyTitle: "Морской бой по LoRa",
+    emptyDesc: "Классический бой 10×10 по MCRS v2: 6 байт на выстрел, мгновенные автоответы в фоне, ореол потопленных кораблей и проверка честности SHA-256.",
+    startBtn: "Выбрать соперника",
+    enemyWaters: "Поле врага", myFleet: "Мой флот",
+    yourShot: "Ваш залп!", waitResult: "Ждём результат…", enemyTurn: "Ход соперника",
+    setupTitle: "Расстановка флота", setupHint: "Нажмите на клетку, чтобы поставить корабль, или на корабль, чтобы убрать",
+    setupWaitInvite: "Ждём ответа соперника — флот можно расставить уже сейчас",
+    setupReadyWait: "Ваш флот готов! Ждём расстановку соперника…",
+    rotateH: "↻ Горизонт.", rotateV: "↻ Вертикаль", randomize: "🎲 Случайно", clear: "Сброс",
+    readyBtn: "⚓ В бой!", fireBtn: "🎯 Огонь", tapToAim: "Нажмите на клетку, чтобы прицелиться",
+    accept: "Принять", decline: "Отклонить", sync: "Синхр.", synced: "Синхронизировано ✓", resign: "Сдаться",
+    sending: "Отправка по LoRa…", delivered: "Доставлено ✓", retrying: "Повторная отправка…",
+    unconfirmed: "Нет ACK — проверьте, что у соперника meshcore-rs", failed: "Ошибка отправки",
+    inviteSent: "Приглашение отправлено", inviteIn: "Приглашает сыграть в Морской бой",
+    won: "Победа!", lost: "Поражение", noRadio: "Нет поддержки MCRS v2 на радио",
+    you: "Вы", opp: "Враг", miss: "мимо", hit: "ранил!", sunk: "потопил!", winHit: "победа!",
+    fairOk: "✓ Флот проверен (SHA-256) — честная игра", fairBad: "⚠ Расстановка соперника не совпала с коммитментом!",
+    fleetLeft: "кораблей", placed: "Расставлено"
+  } : {
+    games: "Games", newGame: "+ New", log: "Shots", chat: "Chat",
+    noGames: "No games yet", noLog: "No shots yet", noChat: "Say hi — messages stay inside this game over LoRa",
+    chatPlaceholder: "Message in this game…", chatQuick: ["👋", "Miss!", "Direct hit! 💥", "Nice shot!"],
+    deleteGame: "Remove from list",
+    emptyTitle: "LoRa Battleship",
+    emptyDesc: "Classic 10×10 naval battle over MCRS v2: 6-byte shots, automatic background hit/miss replies, sunk-ship halos and SHA-256 fair play.",
+    startBtn: "Pick opponent",
+    enemyWaters: "Enemy waters", myFleet: "My fleet",
+    yourShot: "Your shot!", waitResult: "Awaiting result…", enemyTurn: "Opponent's turn",
+    setupTitle: "Fleet setup", setupHint: "Tap a cell to place a ship, or tap a placed ship to pick it up",
+    setupWaitInvite: "Waiting for opponent to accept — you can place your fleet right now",
+    setupReadyWait: "Fleet locked in! Waiting for opponent's fleet…",
+    rotateH: "↻ Horizontal", rotateV: "↻ Vertical", randomize: "🎲 Random", clear: "Clear",
+    readyBtn: "⚓ Ready!", fireBtn: "🎯 Fire", tapToAim: "Tap a cell to aim",
+    accept: "Accept", decline: "Decline", sync: "Sync", synced: "Synced ✓", resign: "Resign",
+    sending: "Sending over LoRa…", delivered: "Delivered ✓", retrying: "Retrying…",
+    unconfirmed: "No ACK — opponent may need meshcore-rs", failed: "Send failed",
+    inviteSent: "Invitation sent", inviteIn: "Invited you to play Battleship",
+    won: "Victory!", lost: "Defeat", noRadio: "Radio lacks MCRS v2 peerData",
+    you: "You", opp: "Enemy", miss: "miss", hit: "hit!", sunk: "sunk!", winHit: "victory!",
+    fairOk: "✓ Fleet verified (SHA-256) — fair play", fairBad: "⚠ Opponent fleet did not match commitment!",
+    fleetLeft: "ships", placed: "Placed"
+  };
+
+  document.getElementById("hGames").textContent = T.games;
+  document.getElementById("newBtn").textContent = T.newGame;
+  document.getElementById("hLog").textContent = T.log;
+  document.getElementById("hChat").textContent = T.chat;
+  document.getElementById("chatInput").placeholder = T.chatPlaceholder;
+
+  var games = (await app.storage.get("games")) || {};
+  var normalizedOnLoad = normalizeStoredGames(games);
+  var selectedKey = app.context.initialActivityId && games[app.context.initialActivityId]
+    ? app.context.initialActivityId
+    : (Object.keys(games).find(function (k) { return games[k].status !== "declined"; }) || null);
+  var sideTab = "log";
+  var mobBoard = "enemy"; // "enemy" | "mine" on narrow screens
+  var aimedCell = -1;
+  var setupDrafts = {}; // gameKey -> Ship[]
+  var setupLen = 4;
+  var setupHoriz = true;
+  var hoverCell = -1;
+  var deliveryByGame = {};
+  var packetToGame = {};
+  var packetToChat = {};
+  var packetChain = Promise.resolve();
+
+  function isTouchDevice() {
+    return typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
+  }
+
+  function getDraft(g) {
+    if (!setupDrafts[g.id]) {
+      if (g.myFleetBytes) {
+        setupDrafts[g.id] = unpackFleet(g.myFleetBytes) || randomFleet();
+      } else {
+        setupDrafts[g.id] = randomFleet() || [];
+      }
+    }
+    return setupDrafts[g.id];
+  }
+
+  function remainingByLen(ships) {
+    var rem = { 4: 1, 3: 2, 2: 3, 1: 4 };
+    for (var i = 0; i < ships.length; i++) {
+      if (rem[ships[i].len] > 0) rem[ships[i].len]--;
+    }
+    return rem;
+  }
+
+  function pickNextSetupLen(ships) {
+    var rem = remainingByLen(ships);
+    if (rem[setupLen] > 0) return;
+    var order = [4, 3, 2, 1];
+    for (var i = 0; i < order.length; i++) {
+      if (rem[order[i]] > 0) { setupLen = order[i]; return; }
+    }
+  }
+
+  async function persist() {
+    await app.storage.set("games", games);
+    await app.ui.setActivities(buildActivities(games, app.context.locale));
+  }
+
+  async function sendForGame(g, bytes, label) {
+    deliveryByGame[g.id] = { tone: "", text: label || T.sending };
+    render();
+    try {
+      var res = await app.transport.send(g.peerPrefix, bytes, { retry: true });
+      packetToGame[res.packetId] = g.id;
+      deliveryByGame[g.id] = { tone: "", text: (label || T.sending) + " (" + (res.flood ? "flood" : "direct") + ")" };
+    } catch (err) {
+      deliveryByGame[g.id] = { tone: "err", text: T.failed + ": " + (err && err.message ? err.message : String(err)) };
+    }
+    render();
+  }
+
+  async function syncGame(g) {
+    var pkts = buildManualSyncPackets(g);
+    for (var i = 0; i < pkts.length; i++) {
+      await sendForGame(g, pkts[i], T.sync);
+    }
+  }
+
+  async function startNewGame() {
+    var peer = await app.peers.pick({ requirePeerData: true });
+    if (!peer) return;
+    var gid = Math.floor(Math.random() * 65534) + 1;
+    var key = "g:" + gid.toString(16).padStart(4, "0");
+    var g = {
+      id: key, gameId: gid, peerPrefix: peer.keyPrefix, peerName: peer.name,
+      myRole: "a", status: "invited_out",
+      myReady: false, oppReady: false,
+      myFleetBytes: null, mySalt: null, myCommit: null,
+      oppCommit: null, oppFleetBytes: null, oppSalt: null, revealVerified: null,
+      log: [], pendingShot: null, winner: null, finishAction: null, updatedAt: Date.now()
+    };
+    games[key] = g;
+    setupDrafts[key] = randomFleet() || [];
+    selectedKey = key;
+    aimedCell = -1;
+    await persist();
+    await sendForGame(g, encodeInvite(gid), T.inviteSent);
+  }
+
+  document.getElementById("newBtn").addEventListener("click", startNewGame);
+
+  window.addEventListener("keydown", function (e) {
+    if ((e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") && document.activeElement !== chatInputEl) {
+      var g = selectedKey ? games[selectedKey] : null;
+      if (g && !g.myReady && (g.status === "setup" || g.status === "invited_out")) {
+        setupHoriz = !setupHoriz;
+        render();
+      }
+    }
+  });
+
+  function setSideTab(next) {
+    sideTab = next;
+    if (sideTab === "chat" && selectedKey && games[selectedKey] && games[selectedKey].unreadChat) {
+      games[selectedKey].unreadChat = 0;
+      void persist();
+    }
+    render();
+    if (sideTab === "chat" && !isTouchDevice()) {
+      var ci = document.getElementById("chatInput");
+      if (ci && !ci.disabled) ci.focus();
+    }
+  }
+  document.getElementById("tabLog").addEventListener("click", function () { setSideTab("log"); });
+  document.getElementById("tabChat").addEventListener("click", function () { setSideTab("chat"); });
+
+  async function sendChatText(raw) {
+    var g = selectedKey ? games[selectedKey] : null;
+    var text = String(raw || "").trim();
+    if (!g || g.status === "declined" || !text) return;
+    var pktBytes = encodeChatPkt(g.gameId, text);
+    var actualText = new TextDecoder().decode(pktBytes.subarray(3));
+    if (!actualText) return;
+    if (!Array.isArray(g.chat)) g.chat = [];
+    var now = Date.now();
+    var msgId = "m:" + now + ":" + Math.random().toString(36).slice(2, 7);
+    var msg = { id: msgId, from: "me", text: actualText, at: now, ts: Math.floor(now / 1000), status: "sending" };
+    g.chat.push(msg);
+    if (g.chat.length > 80) g.chat = g.chat.slice(-80);
+    g.updatedAt = now;
+    g.unreadChat = 0;
+    await persist();
+    render();
+    try {
+      var res = await app.transport.send(g.peerPrefix, pktBytes, { retry: true });
+      packetToChat[res.packetId] = { gameKey: g.id, msgId: msgId };
+      packetToGame[res.packetId] = g.id;
+    } catch (err) {
+      msg.status = "failed";
+      await persist();
+      render();
+    }
+  }
+
+  var chatInputEl = document.getElementById("chatInput");
+  var chatBytesEl = document.getElementById("chatBytes");
+  function updateBytesHint() {
+    var used = new TextEncoder().encode(chatInputEl.value.trim()).length;
+    var left = MAX_CHAT_UTF8 - used;
+    if (used > 0 && left <= 40) {
+      chatBytesEl.classList.remove("hidden");
+      chatBytesEl.classList.toggle("warn", left <= 12);
+      chatBytesEl.textContent = left >= 0 ? (used + " / " + MAX_CHAT_UTF8 + " B") : (MAX_CHAT_UTF8 + " / " + MAX_CHAT_UTF8 + " B");
+    } else {
+      chatBytesEl.classList.add("hidden");
+    }
+  }
+  chatInputEl.addEventListener("input", updateBytesHint);
+  function submitChatInput() {
+    var val = chatInputEl.value;
+    if (!val.trim()) return;
+    chatInputEl.value = "";
+    updateBytesHint();
+    void sendChatText(val);
+  }
+  document.getElementById("chatSend").addEventListener("click", submitChatInput);
+  chatInputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitChatInput();
+    }
+  });
+
+  app.ui.onViewportChange(function (vp) {
+    if (vp && vp.keyboardOpen && sideTab === "chat") {
+      var list = document.getElementById("chatList");
+      if (list) list.scrollTop = list.scrollHeight;
+    }
+  });
+
+  var quickRowEl = document.getElementById("quickRow");
+  T.chatQuick.forEach(function (phrase) {
+    var qb = document.createElement("button");
+    qb.type = "button";
+    qb.className = "quick-chip";
+    qb.textContent = phrase;
+    qb.onclick = function () { void sendChatText(phrase); };
+    quickRowEl.appendChild(qb);
+  });
+
+  app.ui.onOpenActivity(function (actId) {
+    if (games[actId]) {
+      selectedKey = actId;
+      aimedCell = -1;
+      if (sideTab === "chat" && games[actId].unreadChat) {
+        games[actId].unreadChat = 0;
+        void persist();
+      }
+      render();
+    }
+  });
+
+  app.transport.onDelivery(function (ev) {
+    var chatRef = packetToChat[ev.packetId];
+    if (chatRef && games[chatRef.gameKey] && Array.isArray(games[chatRef.gameKey].chat)) {
+      var found = games[chatRef.gameKey].chat.find(function (m) { return m.id === chatRef.msgId; });
+      if (found) {
+        if (ev.status === "delivered") { found.status = "delivered"; void persist(); }
+        else if (ev.status === "failed" || ev.status === "unconfirmed") { found.status = "failed"; void persist(); }
+      }
+    }
+    var gk = packetToGame[ev.packetId];
+    if (!gk) return;
+    if (ev.status === "delivered") {
+      var rtt = ev.rttMs ? " (" + (ev.rttMs / 1000).toFixed(1) + (ru ? "с" : "s") + ")" : "";
+      deliveryByGame[gk] = { tone: "ok", text: T.delivered + rtt + " • LoRa" };
+    } else if (ev.status === "retrying") {
+      deliveryByGame[gk] = { tone: "warn", text: T.retrying + " #" + (ev.attempt + 1) };
+    } else if (ev.status === "unconfirmed") {
+      deliveryByGame[gk] = { tone: "warn", text: T.unconfirmed };
+    } else if (ev.status === "failed") {
+      deliveryByGame[gk] = { tone: "err", text: T.failed + (ev.error ? ": " + ev.error : "") };
+    }
+    render();
+  });
+
+  app.transport.onPacket(function (pkt) {
+    packetChain = packetChain.then(async function () {
+      var res = applyIncomingPacket(games, pkt, app.context.locale);
+      if (res.synced && res.gameKey) {
+        deliveryByGame[res.gameKey] = { tone: "ok", text: T.synced };
+      }
+      if (res.changed) {
+        if (!selectedKey && res.gameKey) selectedKey = res.gameKey;
+        if (res.isChat && res.gameKey === selectedKey && sideTab === "chat" && games[res.gameKey]) {
+          games[res.gameKey].unreadChat = 0;
+        }
+        await persist();
+        if (res.notify && !(res.isChat && res.gameKey === selectedKey && sideTab === "chat")) {
+          void app.ui.notify(res.notify);
+        }
+        render();
+      } else if (res.synced) {
+        render();
+      }
+      if (res.replies && res.replies.length) {
+        for (var i = 0; i < res.replies.length; i++) {
+          var r = res.replies[i];
+          try {
+            var sent = await app.transport.send(r.peerPrefix, new Uint8Array(r.payload), { retry: true });
+            if (res.gameKey) packetToGame[sent.packetId] = res.gameKey;
+          } catch (err) {
+            if (res.gameKey) {
+              deliveryByGame[res.gameKey] = { tone: "err", text: T.failed + ": " + (err && err.message ? err.message : String(err)) };
+              render();
+            }
+          }
+        }
+      }
+    });
+  });
+
+  async function lockFleet(g) {
+    var draft = getDraft(g);
+    var packed = packFleet(draft);
+    if (!packed) return;
+    var salt = generateSalt8();
+    var commit = computeCommit8(packed, salt);
+    g.myFleetBytes = packed;
+    g.mySalt = salt;
+    g.myCommit = commit;
+    g.myReady = true;
+    if (g.status === "setup" && g.oppReady) g.status = "playing";
+    g.updatedAt = Date.now();
+    await persist();
+    if (g.status !== "invited_out") {
+      await sendForGame(g, encodeReady(g.gameId, commit), T.readyBtn);
+    } else {
+      render();
+    }
+  }
+
+  async function fireAt(g, cell) {
+    var st = deriveBoards(g);
+    if (g.status !== "playing" || st.turn !== g.myRole || g.pendingShot) return;
+    if (st.oppCells[cell] !== 0 && st.oppCells[cell] !== 5) return;
+    var seq = g.log.length + 1;
+    g.pendingShot = { seq: seq, cell: cell };
+    g.updatedAt = Date.now();
+    aimedCell = -1;
+    await persist();
+    await sendForGame(g, encodeShot(g.gameId, seq, cell), T.fireBtn + " " + cellName(cell, locale));
+  }
+
+  function fmtTime(ms) {
+    var d = new Date(ms || Date.now());
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function shipSegmentClasses(ships) {
+    var map = {};
+    var joinR = {};
+    var joinB = {};
+    if (!ships) return { seg: map, joinR: joinR, joinB: joinB };
+    for (var i = 0; i < ships.length; i++) {
+      var s = ships[i];
+      var cells = shipCells(s);
+      for (var k = 0; k < cells.length; k++) {
+        var cls = "ship-seg";
+        if (s.len > 1) {
+          if (s.horiz) {
+            cls += k === 0 ? " h-start" : (k === s.len - 1 ? " h-end" : " h-mid");
+            if (k < s.len - 1) joinR[cells[k]] = true;
+          } else {
+            cls += k === 0 ? " v-start" : (k === s.len - 1 ? " v-end" : " v-mid");
+            if (k < s.len - 1) joinB[cells[k]] = true;
+          }
+        }
+        map[cells[k]] = cls;
+      }
+    }
+    return { seg: map, joinR: joinR, joinB: joinB };
+  }
+
+  function renderFleetStrip(rem) {
+    var html = '<div class="fleet-strip">';
+    var counts = [
+      { len: 4, total: 1 },
+      { len: 3, total: 2 },
+      { len: 2, total: 3 },
+      { len: 1, total: 4 }
+    ];
+    for (var i = 0; i < counts.length; i++) {
+      var len = counts[i].len;
+      var total = counts[i].total;
+      var alive = rem[len] || 0;
+      html += '<span class="fleet-group">';
+      for (var n = 0; n < total; n++) {
+        var sunk = n >= alive;
+        html += '<span class="mini-ship' + (sunk ? " sunk" : "") + '">';
+        for (var p = 0; p < len; p++) html += '<i></i>';
+        html += '</span>';
+      }
+      html += '</span>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function buildBoardEl(opts) {
+    var grid = document.createElement("div");
+    grid.className = "sea-grid";
+    var corner = document.createElement("div");
+    corner.className = "hdr-cell";
+    grid.appendChild(corner);
+    for (var c = 0; c < 10; c++) {
+      var ch = document.createElement("div");
+      ch.className = "hdr-cell";
+      ch.textContent = cols[c];
+      grid.appendChild(ch);
+    }
+    var segInfo = shipSegmentClasses(opts.ships);
+    var segMap = segInfo.seg;
+    var previewSet = opts.previewSet || {};
+    var previewOk = !!opts.previewOk;
+
+    for (var y = 0; y < 10; y++) {
+      var rh = document.createElement("div");
+      rh.className = "hdr-cell";
+      rh.textContent = String(y + 1);
+      grid.appendChild(rh);
+      for (var x = 0; x < 10; x++) {
+        var idx = y * 10 + x;
+        var st = opts.cells ? opts.cells[idx] : 0;
+        var btn = document.createElement("button");
+        btn.type = "button";
+        var cls = "cell";
+        if (opts.setupMode) cls += " setup-cell";
+        if (opts.canShoot && (st === 0 || st === 5)) cls += " shootable";
+        if (st === 3) cls += " hit";
+        if (st === 4) cls += " sunk";
+        if (segInfo.joinR[idx]) cls += " join-r";
+        if (segInfo.joinB[idx]) cls += " join-b";
+        if (opts.lastShot === idx) cls += " last-shot";
+        if (opts.aimed === idx) cls += " aimed";
+        if (opts.pending === idx) cls += " pending-shot";
+        if (previewSet[idx]) cls += previewOk ? " preview-ok" : " preview-bad";
+        btn.className = cls;
+
+        if (segMap[idx]) {
+          var hullCls = segMap[idx];
+          if (st === 4) hullCls += " sunk-hull";
+          else if (opts.revealedOnly && st === 1) hullCls += " revealed";
+          btn.insertAdjacentHTML("beforeend", '<span class="' + hullCls + '"></span>');
+        }
+        if (st === 2) btn.insertAdjacentHTML("beforeend", '<span class="miss-dot"></span>');
+        else if (st === 5) btn.insertAdjacentHTML("beforeend", '<span class="halo-dot"></span>');
+        else if (st === 3 || st === 4) btn.insertAdjacentHTML("beforeend", HIT_SVG);
+        else if (opts.aimed === idx || opts.pending === idx) btn.insertAdjacentHTML("beforeend", AIM_SVG);
+
+        if (opts.onCellClick) {
+          (function (cellIdx) {
+            btn.onclick = function () { opts.onCellClick(cellIdx); };
+          })(idx);
+        }
+        if (opts.onCellHover) {
+          (function (cellIdx) {
+            btn.onmouseenter = function () { opts.onCellHover(cellIdx); };
+          })(idx);
+        }
+        grid.appendChild(btn);
+      }
+    }
+    if (opts.onBoardLeave) {
+      grid.onmouseleave = opts.onBoardLeave;
+    }
+    return grid;
+  }
+
+  function renderSideTabs(g) {
+    var tabLog = document.getElementById("tabLog");
+    var tabChat = document.getElementById("tabChat");
+    var logBox = document.getElementById("logBox");
+    var chatPane = document.getElementById("chatPane");
+    var cLogEl = document.getElementById("cLog");
+    var cChatEl = document.getElementById("cChat");
+    var chatList = document.getElementById("chatList");
+    var chatSend = document.getElementById("chatSend");
+
+    tabLog.classList.toggle("on", sideTab === "log");
+    tabLog.setAttribute("aria-selected", String(sideTab === "log"));
+    tabChat.classList.toggle("on", sideTab === "chat");
+    tabChat.setAttribute("aria-selected", String(sideTab === "chat"));
+    logBox.classList.toggle("hidden", sideTab !== "log");
+    chatPane.classList.toggle("hidden", sideTab !== "chat");
+
+    var log = (g && Array.isArray(g.log)) ? g.log : [];
+    cLogEl.textContent = String(log.length);
+    var msgs = (g && Array.isArray(g.chat)) ? g.chat : [];
+    var unread = (g && g.unreadChat) || 0;
+    cChatEl.textContent = String(unread > 0 ? unread : msgs.length);
+    cChatEl.classList.toggle("hot", unread > 0);
+
+    var canChat = !!g && g.status !== "declined";
+    chatInputEl.disabled = !canChat;
+    chatSend.disabled = !canChat;
+    var qChips = quickRowEl.querySelectorAll("button");
+    for (var q = 0; q < qChips.length; q++) qChips[q].disabled = !canChat;
+
+    if (sideTab === "log") {
+      if (log.length === 0) {
+        logBox.innerHTML = '<div class="moves-empty">' + esc(T.noLog) + '</div>';
+      } else {
+        var lHtml = "";
+        for (var li = 0; li < log.length; li++) {
+          var e = log[li];
+          var mine = g && e.shooter === g.myRole;
+          var rText = e.res === RES_MISS ? T.miss : e.res === RES_HIT ? T.hit : e.res === RES_SUNK ? T.sunk : T.winHit;
+          var rCls = e.res === RES_MISS ? "miss" : (e.res === RES_HIT ? "hit" : "sunk");
+          lHtml +=
+            '<div class="log-row' + (li === log.length - 1 ? " latest" : "") + '">' +
+              '<span class="log-who">' + (li + 1) + '. ' + esc(mine ? T.you : T.opp) + '</span>' +
+              '<span class="log-coord">' + esc(cellName(e.cell, locale)) + '</span>' +
+              '<span class="log-res ' + rCls + '">' + esc(rText) + '</span>' +
+            '</div>';
+        }
+        logBox.innerHTML = lHtml;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    } else {
+      if (msgs.length === 0) {
+        chatList.innerHTML = '<div class="moves-empty">' + esc(T.noChat) + '</div>';
+      } else {
+        var html = "";
+        for (var i = 0; i < msgs.length; i++) {
+          var m = msgs[i];
+          var cls = m.from === "me" ? "out" : "in";
+          var st = "";
+          if (m.from === "me") {
+            if (m.status === "delivered") st = '<span class="st-ok">✓</span>';
+            else if (m.status === "failed") st = '<span class="st-err">!</span>';
+            else st = '<span>…</span>';
+          }
+          html += '<div class="chat-msg ' + cls + '"><span>' + esc(m.text) + '</span><span class="chat-meta"><span>' + fmtTime(m.at) + '</span>' + st + '</span></div>';
+        }
+        chatList.innerHTML = html;
+        chatList.scrollTop = chatList.scrollHeight;
+      }
+    }
+  }
+
+  function render() {
+    var listEl = document.getElementById("gamesList");
+    var cGamesEl = document.getElementById("cGames");
+    var mainEl = document.getElementById("main");
+    var acts = buildActivities(games, app.context.locale);
+    cGamesEl.textContent = String(acts.length);
+
+    listEl.innerHTML = "";
+    if (acts.length === 0) {
+      listEl.innerHTML = '<div class="games-empty">' + esc(T.noGames) + '</div>';
+    } else {
+      acts.forEach(function (a) {
+        var gm = games[a.id];
+        var row = document.createElement("div");
+        row.className = "g-row" + (a.id === selectedKey ? " on" : "");
+        row.setAttribute("role", "button");
+        row.tabIndex = 0;
+        var gidHex = gm ? "#" + gm.gameId.toString(16).padStart(4, "0") : "";
+        var canDel = gm && (gm.status === "finished" || gm.status === "invited_out");
+        var unreadDot = (gm && gm.unreadChat > 0) ? '<span class="seg-pill hot">💬 ' + gm.unreadChat + '</span>' : '';
+        row.innerHTML =
+          '<div class="top">' +
+            '<span class="peer-name">' + esc(a.title) + '</span>' +
+            '<span class="top-right">' +
+              unreadDot +
+              (a.badge ? '<span class="badge ' + a.badge.tone + '">' + esc(a.badge.text) + '</span>' : '') +
+              (canDel ? '<button type="button" class="g-del" title="' + esc(T.deleteGame) + '">×</button>' : '') +
+            '</span>' +
+          '</div>' +
+          '<div class="bot"><span class="sub">' + esc(a.subtitle) + '</span><span class="gid">' + esc(gidHex) + '</span></div>';
+        row.onclick = function () {
+          selectedKey = a.id; aimedCell = -1; hoverCell = -1;
+          if (sideTab === "chat" && gm && gm.unreadChat) { gm.unreadChat = 0; void persist(); }
+          render();
+        };
+        row.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); row.click(); } };
+        var delBtn = row.querySelector(".g-del");
+        if (delBtn) {
+          delBtn.onclick = async function (e) {
+            e.stopPropagation();
+            delete games[a.id];
+            delete setupDrafts[a.id];
+            if (selectedKey === a.id) {
+              selectedKey = Object.keys(games).find(function (k) { return games[k].status !== "declined"; }) || null;
+            }
+            await persist();
+            render();
+          };
+        }
+        listEl.appendChild(row);
+      });
+    }
+
+    var g = selectedKey ? games[selectedKey] : null;
+    renderSideTabs(g);
+
+    if (!g || g.status === "declined") {
+      mainEl.innerHTML = '<div class="empty"><div class="empty-icon">' + SHIP_HERO_SVG + '</div><strong>' + esc(T.emptyTitle) +
+        '</strong><p>' + esc(T.emptyDesc) + '</p><button class="btn primary" id="emptyStart">' + esc(T.startBtn) + '</button></div>';
+      document.getElementById("emptyStart").onclick = startNewGame;
+      return;
+    }
+
+    mainEl.innerHTML = "";
+    var isSetup = g.status === "setup" || g.status === "invited_out" || g.status === "invited_in";
+    var topBar = document.createElement("div");
+    topBar.className = "bar " + (isSetup ? "narrow" : "dual-w");
+    var st = deriveBoards(g);
+    var myTurn = g.status === "playing" && st.turn === g.myRole && !g.pendingShot;
+    var stateText = "";
+    var stateCls = "";
+    if (g.status === "finished") {
+      var won = g.winner === g.myRole;
+      stateText = won ? T.won : T.lost;
+      stateCls = won ? "turn-win" : "turn-loss";
+    } else if (g.status === "invited_in") {
+      stateText = T.inviteIn;
+      stateCls = "turn";
+    } else if (g.status === "invited_out") {
+      stateText = T.inviteSent;
+    } else if (g.status === "setup") {
+      stateText = g.myReady ? T.setupReadyWait : T.setupTitle;
+      stateCls = g.myReady ? "" : "turn";
+    } else if (g.pendingShot) {
+      stateText = T.waitResult;
+    } else if (myTurn) {
+      stateText = T.yourShot;
+      stateCls = "turn";
+    } else {
+      stateText = T.enemyTurn;
+    }
+    topBar.innerHTML =
+      '<strong>' + esc(g.peerName) + ' <span style="font-weight:400;color:var(--text-faint)">#' + g.gameId.toString(16).padStart(4, "0") + '</span></strong>' +
+      '<span class="' + stateCls + '">' + esc(stateText) + '</span>';
+    mainEl.appendChild(topBar);
+
+    if (g.status === "invited_in") {
+      var inv = document.createElement("div");
+      inv.className = "status-pill narrow ok";
+      inv.textContent = g.peerName + ": " + T.inviteIn;
+      mainEl.appendChild(inv);
+      var invBtns = document.createElement("div");
+      invBtns.className = "actions narrow";
+      var acc = document.createElement("button");
+      acc.className = "btn primary"; acc.textContent = T.accept;
+      acc.onclick = async function () {
+        g.status = "setup"; g.updatedAt = Date.now();
+        setupDrafts[g.id] = randomFleet() || [];
+        await persist();
+        await sendForGame(g, encodeAccept(g.gameId), T.accept);
+      };
+      var dec = document.createElement("button");
+      dec.className = "btn danger"; dec.textContent = T.decline;
+      dec.onclick = async function () {
+        g.status = "declined"; g.updatedAt = Date.now();
+        await persist();
+        await sendForGame(g, encodeDecline(g.gameId), T.decline);
+      };
+      invBtns.appendChild(acc); invBtns.appendChild(dec);
+      mainEl.appendChild(invBtns);
+      return;
+    }
+
+    if (g.status === "setup" || g.status === "invited_out") {
+      var draft = getDraft(g);
+      pickNextSetupLen(draft);
+      var rem = remainingByLen(draft);
+      var allPlaced = draft.length === FLEET_LENS.length && validateFleet(draft);
+
+      if (g.status === "invited_out") {
+        var waitBanner = document.createElement("div");
+        waitBanner.className = "status-pill narrow";
+        waitBanner.textContent = g.myReady ? T.setupReadyWait : T.setupWaitInvite;
+        mainEl.appendChild(waitBanner);
+      } else if (g.myReady) {
+        var rdyBanner = document.createElement("div");
+        rdyBanner.className = "status-pill narrow ok";
+        rdyBanner.textContent = T.setupReadyWait;
+        mainEl.appendChild(rdyBanner);
+      }
+
+      var previewSet = {};
+      var previewOk = false;
+      if (!g.myReady && hoverCell >= 0 && rem[setupLen] > 0) {
+        var cand = { x: hoverCell % 10, y: Math.floor(hoverCell / 10), len: setupLen, horiz: setupHoriz };
+        previewOk = canPlaceShip(draft, cand, -1);
+        for (var pi = 0; pi < cand.len; pi++) {
+          var px = cand.x + (cand.horiz ? pi : 0);
+          var py = cand.y + (cand.horiz ? 0 : pi);
+          if (px >= 0 && px < 10 && py >= 0 && py < 10) previewSet[py * 10 + px] = true;
+        }
+      }
+
+      var wrap = document.createElement("div");
+      wrap.className = "boards-grid single";
+      var card = document.createElement("div");
+      card.className = "board-card";
+      card.appendChild(buildBoardEl({
+        ships: draft,
+        setupMode: !g.myReady,
+        previewSet: previewSet,
+        previewOk: previewOk,
+        onCellHover: g.myReady ? null : function (cellIdx) {
+          if (hoverCell !== cellIdx) { hoverCell = cellIdx; render(); }
+        },
+        onBoardLeave: g.myReady ? null : function () {
+          if (hoverCell !== -1) { hoverCell = -1; render(); }
+        },
+        onCellClick: g.myReady ? null : function (cellIdx) {
+          // Clicking an existing ship picks it up so the user can reposition or rotate it easily.
+          var hitIdx = -1;
+          for (var si = 0; si < draft.length; si++) {
+            if (shipCells(draft[si]).indexOf(cellIdx) >= 0) { hitIdx = si; break; }
+          }
+          if (hitIdx >= 0) {
+            var removed = draft.splice(hitIdx, 1)[0];
+            setupLen = removed.len;
+            setupHoriz = removed.horiz;
+            render();
+            return;
+          }
+          if (rem[setupLen] <= 0) return;
+          var placeCand = { x: cellIdx % 10, y: Math.floor(cellIdx / 10), len: setupLen, horiz: setupHoriz };
+          if (canPlaceShip(draft, placeCand, -1)) {
+            draft.push(placeCand);
+            pickNextSetupLen(draft);
+            render();
+          }
+        }
+      }));
+      wrap.appendChild(card);
+      mainEl.appendChild(wrap);
+
+      if (!g.myReady) {
+        var dock = document.createElement("div");
+        dock.className = "dock-box";
+        dock.innerHTML =
+          '<div class="dock-hint"><span>' + esc(T.setupHint) + '</span><strong>' + draft.length + '/10</strong></div>';
+        var dockRow = document.createElement("div");
+        dockRow.className = "dock-ships";
+        [4, 3, 2, 1].forEach(function (len) {
+          var db = document.createElement("button");
+          db.type = "button";
+          db.className = "dock-btn" + (setupLen === len && rem[len] > 0 ? " on" : "");
+          db.disabled = rem[len] <= 0;
+          var pips = '<span class="dock-pips">' + new Array(len + 1).join("<i></i>") + '</span>';
+          db.innerHTML = pips + '<span>×' + rem[len] + '</span>';
+          db.onclick = function () { setupLen = len; render(); };
+          dockRow.appendChild(db);
+        });
+        dock.appendChild(dockRow);
+        mainEl.appendChild(dock);
+
+        var sActs = document.createElement("div");
+        sActs.className = "actions narrow";
+        var rotBtn = document.createElement("button");
+        rotBtn.className = "btn";
+        rotBtn.textContent = setupHoriz ? T.rotateH : T.rotateV;
+        rotBtn.onclick = function () { setupHoriz = !setupHoriz; render(); };
+
+        var rndBtn = document.createElement("button");
+        rndBtn.className = "btn";
+        rndBtn.textContent = T.randomize;
+        rndBtn.onclick = function () { setupDrafts[g.id] = randomFleet() || []; render(); };
+
+        var clrBtn = document.createElement("button");
+        clrBtn.className = "btn";
+        clrBtn.textContent = T.clear;
+        clrBtn.onclick = function () { setupDrafts[g.id] = []; setupLen = 4; render(); };
+
+        sActs.appendChild(rotBtn);
+        sActs.appendChild(rndBtn);
+        sActs.appendChild(clrBtn);
+        mainEl.appendChild(sActs);
+
+        var rdyActs = document.createElement("div");
+        rdyActs.className = "actions narrow";
+        var rdyBtn = document.createElement("button");
+        rdyBtn.className = "btn primary";
+        rdyBtn.disabled = !allPlaced;
+        rdyBtn.textContent = T.readyBtn;
+        rdyBtn.onclick = function () { void lockFleet(g); };
+        rdyActs.appendChild(rdyBtn);
+        mainEl.appendChild(rdyActs);
+      } else {
+        var waitSync = document.createElement("div");
+        waitSync.className = "actions narrow";
+        var wsBtn = document.createElement("button");
+        wsBtn.className = "btn";
+        wsBtn.textContent = T.sync;
+        wsBtn.onclick = function () { void syncGame(g); };
+        waitSync.appendChild(wsBtn);
+        mainEl.appendChild(waitSync);
+      }
+
+      appendDeliveryPill(mainEl, g, "narrow");
+      return;
+    }
+
+    // Playing or finished phase: dual boards on wide desktop, large tabbed board on mobile/narrow viewports.
+    var sw = document.createElement("div");
+    sw.className = "board-switch active";
+    var tabEnemy = document.createElement("button");
+    tabEnemy.type = "button";
+    tabEnemy.className = "seg-tab" + (mobBoard === "enemy" ? " on" : "");
+    tabEnemy.innerHTML = '<span>🎯 ' + esc(T.enemyWaters) + '</span><span class="seg-pill' + (myTurn ? " hot" : "") + '">' + st.oppFleetStatus.alive + '</span>';
+    tabEnemy.onclick = function () { mobBoard = "enemy"; render(); };
+
+    var tabMine = document.createElement("button");
+    tabMine.type = "button";
+    tabMine.className = "seg-tab" + (mobBoard === "mine" ? " on" : "");
+    tabMine.innerHTML = '<span>🛡 ' + esc(T.myFleet) + '</span><span class="seg-pill">' + st.myFleetStatus.alive + '</span>';
+    tabMine.onclick = function () { mobBoard = "mine"; render(); };
+
+    sw.appendChild(tabEnemy);
+    sw.appendChild(tabMine);
+    mainEl.appendChild(sw);
+
+    if (g.log.length > 0) {
+      var lastEv = g.log[g.log.length - 1];
+      var evRow = document.createElement("div");
+      var evCls = lastEv.res === RES_HIT ? " hit" : (lastEv.res === RES_SUNK || lastEv.res === RES_WIN ? " sunk" : "");
+      evRow.className = "last-event dual-w" + evCls;
+      var who = lastEv.shooter === g.myRole ? T.you : g.peerName;
+      evRow.innerHTML = '<span>' + esc(who) + ': <strong>' + esc(formatShotSummary(lastEv, locale)) + '</strong></span><span>#' + g.log.length + '</span>';
+      mainEl.appendChild(evRow);
+    }
+
+    var boards = document.createElement("div");
+    boards.className = "boards-grid dual";
+
+    // Enemy waters card
+    var enemyCard = document.createElement("div");
+    enemyCard.className = "board-card" + (mobBoard !== "enemy" ? " mob-hidden" : "");
+    enemyCard.innerHTML =
+      '<div class="board-card-head"><strong>🎯 ' + esc(T.enemyWaters) + '</strong><span>' + st.oppFleetStatus.alive + ' ' + esc(T.fleetLeft) + '</span></div>' +
+      renderFleetStrip(st.oppFleetStatus.rem);
+
+    var enemyShipsForRender = [];
+    // Show sunk ships outlines during game + full revealed fleet after game end.
+    if (st.oppRevealed) {
+      enemyShipsForRender = st.oppRevealed;
+    } else {
+      for (var ei = 0; ei < g.log.length; ei++) {
+        var le = g.log[ei];
+        if (le.shooter === g.myRole && (le.res === RES_SUNK || le.res === RES_WIN) && le.sunkLen > 0) {
+          var es = unpackShipByte(le.sunkShip, le.sunkLen);
+          if (es) enemyShipsForRender.push(es);
+        }
+      }
+    }
+
+    var enemyBoard = buildBoardEl({
+      cells: st.oppCells,
+      ships: enemyShipsForRender,
+      revealedOnly: !!st.oppRevealed,
+      canShoot: myTurn,
+      lastShot: st.myLastShot,
+      aimed: myTurn ? aimedCell : -1,
+      pending: g.pendingShot ? g.pendingShot.cell : -1,
+      onCellClick: function (cellIdx) {
+        if (!myTurn) return;
+        if (st.oppCells[cellIdx] !== 0 && st.oppCells[cellIdx] !== 5) return;
+        if (isTouchDevice()) {
+          if (aimedCell === cellIdx) {
+            void fireAt(g, cellIdx);
+          } else {
+            aimedCell = cellIdx;
+            render();
+          }
+        } else {
+          void fireAt(g, cellIdx);
+        }
+      }
+    });
+    enemyCard.appendChild(enemyBoard);
+
+    // Touch-friendly confirm fire button when aimed on mobile/tablet
+    if (myTurn && isTouchDevice()) {
+      var fireBar = document.createElement("div");
+      fireBar.className = "fire-bar";
+      var fBtn = document.createElement("button");
+      fBtn.className = "btn primary";
+      fBtn.disabled = aimedCell < 0;
+      fBtn.textContent = aimedCell >= 0 ? (T.fireBtn + " (" + cellName(aimedCell, locale) + ")") : T.tapToAim;
+      fBtn.onclick = function () { if (aimedCell >= 0) void fireAt(g, aimedCell); };
+      fireBar.appendChild(fBtn);
+      enemyCard.appendChild(fireBar);
+    }
+
+    // Own fleet card
+    var mineCard = document.createElement("div");
+    mineCard.className = "board-card" + (mobBoard !== "mine" ? " mob-hidden" : "");
+    mineCard.innerHTML =
+      '<div class="board-card-head"><strong>🛡 ' + esc(T.myFleet) + '</strong><span>' + st.myFleetStatus.alive + ' ' + esc(T.fleetLeft) + '</span></div>' +
+      renderFleetStrip(st.myFleetStatus.rem);
+
+    mineCard.appendChild(buildBoardEl({
+      cells: st.myCells,
+      ships: st.myShips || [],
+      canShoot: false,
+      lastShot: st.oppLastShot
+    }));
+
+    boards.appendChild(enemyCard);
+    boards.appendChild(mineCard);
+    mainEl.appendChild(boards);
+
+    if (g.status === "finished" && g.revealVerified) {
+      var fairPill = document.createElement("div");
+      fairPill.className = "status-pill dual-w " + (g.revealVerified === "ok" ? "ok" : "err");
+      fairPill.textContent = g.revealVerified === "ok" ? T.fairOk : T.fairBad;
+      mainEl.appendChild(fairPill);
+    }
+
+    appendDeliveryPill(mainEl, g, "dual-w");
+
+    var actsEl = document.createElement("div");
+    actsEl.className = "actions dual-w";
+    var syncBtn = document.createElement("button");
+    syncBtn.className = "btn"; syncBtn.textContent = T.sync;
+    syncBtn.onclick = function () { void syncGame(g); };
+    actsEl.appendChild(syncBtn);
+
+    if (g.status === "playing") {
+      var resBtn = document.createElement("button");
+      resBtn.className = "btn danger"; resBtn.textContent = T.resign;
+      resBtn.onclick = async function () {
+        g.status = "finished"; g.winner = oppRole(g.myRole); g.finishAction = ACT_RESIGN; g.pendingShot = null; g.updatedAt = Date.now();
+        await persist();
+        await sendForGame(g, encodeActionPkt(g.gameId, g.log.length, ACT_RESIGN), T.resign);
+        if (g.myFleetBytes && g.mySalt) {
+          await sendForGame(g, encodeReveal(g.gameId, g.myFleetBytes, g.mySalt), T.resign);
+        }
+      };
+      actsEl.appendChild(resBtn);
+    }
+    mainEl.appendChild(actsEl);
+  }
+
+  function appendDeliveryPill(container, g, widthCls) {
+    var del = deliveryByGame[g.id];
+    if (del || !app.context.radio.supportsPeerData) {
+      var pill = document.createElement("div");
+      pill.className = "status-pill " + widthCls + " " + (del ? del.tone : "warn");
+      pill.textContent = del ? del.text : T.noRadio;
+      container.appendChild(pill);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  if (normalizedOnLoad) await persist();
+  else await app.ui.setActivities(buildActivities(games, app.context.locale));
+  render();
+});
+</script>
