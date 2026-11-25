@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-11-25T16:56:27.235Z",
+  "apps": [
+    {
+      "id": "ommesh.battleship",
+      "appId": 258,
+      "version": "1.0.1",
+      "name": {
+        "ru": "Морской бой",
+        "en": "Battleship"
+      },
+      "description": {
+        "ru": "Морской бой 10×10 по LoRa с автоответом в фоне, проверкой честности (commit-reveal), синхронизацией и чатом партии",
+        "en": "10×10 Battleship over LoRa with automatic background hit/miss replies, commit-reveal fair play, two-way sync and game chat"
+      },
+      "author": "Ommesh",
+      "scope": "p2p",
+      "minProtocol": 2,
+      "permissions": [
+        "peerData",
+        "storage",
+        "notifications"
+      ],
+      "verified": true,
+      "sizeBytes": 154928,
+      "sha256": "1bb5386f097a8e63bc2e790d1fd3e7fa3ae8fc306a2e372356911e2550a27c45",
+      "iconSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 16l2.2 3h13.6L21 16H3z\"/><path d=\"M6 16v-3.5h12V16\"/><path d=\"M9.5 12.5V9h5v3.5\"/><path d=\"M12 9V6.5\"/><path d=\"M14.5 10.5l4-1\"/><path d=\"M2.5 21.5c1.6 0 2.4-.9 3.8-.9s2.2.9 3.8.9 2.4-.9 3.8-.9 2.2.9 3.8.9 2.4-.9 3.8-.9\"/></svg>",
+      "file": "ommesh.battleship.omapp"
+    },
+    {
+      "id": "ommesh.checkers",
+      "appId": 257,
+      "version": "1.0.1",
+      "name": {
+        "ru": "Шашки",
+        "en": "Checkers"
+      },
+      "description": {
+        "ru": "Русские шашки 8×8 по LoRa с обязательным боем и летающими дамками (1 AES-блок на ход, двусторонний ресинк и чат партии)",
+        "en": "Russian draughts (8×8) over LoRa with mandatory captures and flying kings (1 AES block per move, two-way resync and game chat)"
+      },
+      "author": "Ommesh",
+      "scope": "p2p",
+      "minProtocol": 2,
+      "permissions": [
+        "peerData",
+        "storage",
+        "notifications"
+      ],
+      "verified": true,
+      "sizeBytes": 131855,
+      "sha256": "ba3ebaa57bb79df77d55d1ba0982c60249da07eb99a25b963d90fbcf8c27b131",
+      "iconSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><circle cx=\"12\" cy=\"12\" r=\"6\"/><path d=\"M8.7 14.3 8 10l2.2 1.6L12 9.4l1.8 2.2L16 10l-.7 4.3z\"/></svg>",
+      "file": "ommesh.checkers.omapp"
+    },
+    {
+      "id": "ommesh.chess",
+      "appId": 256,
+      "version": "1.4.2",
+      "name": {
+        "ru": "Шахматы",
+        "en": "Chess"
+      },
+      "description": {
+        "ru": "Шахматы по LoRa с подтверждением ходов (1 AES-блок на ход, двусторонний ресинк и фоновые уведомления)",
+        "en": "LoRa chess with delivery ACKs (1 AES block per move, two-way resync and background notifications)"
+      },
+      "author": "Ommesh",
+      "scope": "p2p",
+      "minProtocol": 2,
+      "permissions": [
+        "peerData",
+        "storage",
+        "notifications"
+      ],
+      "verified": true,
+      "sizeBytes": 130313,
+      "sha256": "d2adea76fee03f785810d3ae3142af716b0af6653543135262053382dc41c4c7",
+      "iconSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"6\" r=\"2.5\"/><path d=\"M9.5 10.5h5l1 5.5H8.5l1-5.5Z\"/><path d=\"M7 18.5h10v2H7z\"/></svg>",
+      "file": "ommesh.chess.omapp"
+    },
+    {
+      "id": "ommesh.lora-calc",
+      "appId": 0,
+      "version": "1.0.2",
+      "name": {
+        "ru": "Калькулятор LoRa",
+        "en": "LoRa Calculator"
+      },
+      "description": {
+        "ru": "Офлайн-расчёт эфирного времени и зоны Френеля без доступа к радио и контактам",
+        "en": "Offline LoRa airtime and Fresnel zone calculator with zero permissions"
+      },
+      "author": "Ommesh",
+      "scope": "standalone",
+      "permissions": [],
+      "verified": true,
+      "sizeBytes": 7624,
+      "sha256": "9cc116594fe4d3362cb602a0155738621e805ea55a227c2c369c13ed06d4691b",
+      "iconSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.9 19.1C1 15.2 1 8.8 4.9 4.9\"/><path d=\"M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5\"/><circle cx=\"12\" cy=\"12\" r=\"2\"/><path d=\"M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5\"/><path d=\"M19.1 4.9C23 8.8 23 15.1 19.1 19\"/></svg>",
+      "file": "ommesh.lora-calc.omapp"
+    }
+  ]
+}
