@@ -74,3 +74,37 @@ test("chess bidirectional sync reconciles both sides and >72 ply games", () => {
   exchange(eng, alice, bob, pkts.map((payload) => ({ to: "bob", payload })));
   assert.deepEqual(Array.from(bob[key].moves), full);
 });
+
+test("chess side sync self-heals mirrored legacy desktop games", () => {
+  const eng = loadEngine();
+  const full = makeMoves(eng, 11);
+  const phoneGame = {
+    id: "g:4ba6", gameId: 0x4ba6, peerPrefix: "bbbbbb000002", peerName: "Bob",
+    myColor: "w", colorVerified: true, status: "finished", moves: [...full],
+    drawOfferedBy: null, winner: "b", finishAction: eng.ACT_RESIGN, updatedAt: 5,
+  };
+  const desktop = {
+    "g:4ba6": {
+      id: "g:4ba6", gameId: 0x4ba6, peerPrefix: "bbbbbb000002", peerName: "Bob",
+      myColor: "b", status: "finished", moves: [...full],
+      drawOfferedBy: null, winner: "w", finishAction: eng.ACT_RESIGN, updatedAt: 5,
+    },
+    "g:3e1d": {
+      id: "g:3e1d", gameId: 0x3e1d, peerPrefix: "cccccc000003", peerName: "Carol",
+      myColor: "b", status: "invited_out", moves: [],
+      drawOfferedBy: null, winner: null, finishAction: null, updatedAt: 2,
+    },
+  };
+  assert.equal(eng.normalizeStoredGames(desktop), true);
+  assert.equal(desktop["g:3e1d"].myColor, "w");
+
+  for (const payload of eng.buildManualSyncPackets(phoneGame)) {
+    eng.applyIncomingPacket(
+      desktop,
+      { peerPrefix: "bbbbbb000002", peerName: "Bob", payload, timestamp: 99, snr: 0, hops: null, mirrored: true },
+      "en",
+    );
+  }
+  assert.equal(desktop["g:4ba6"].myColor, "w");
+  assert.equal(desktop["g:4ba6"].winner, "b");
+});

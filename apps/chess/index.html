@@ -600,6 +600,7 @@ window.ommeshReady.then(async function (app) {
   document.getElementById("chatInput").placeholder = T.chatPlaceholder;
 
   var games = (await app.storage.get("games")) || {};
+  var normalizedOnLoad = normalizeStoredGames(games);
   var selectedKey = app.context.initialActivityId && games[app.context.initialActivityId]
     ? app.context.initialActivityId
     : (Object.keys(games).find(function (k) { return games[k].status !== "declined"; }) || null);
@@ -643,7 +644,7 @@ window.ommeshReady.then(async function (app) {
     var key = "g:" + gid.toString(16).padStart(4, "0");
     var g = {
       id: key, gameId: gid, peerPrefix: peer.keyPrefix, peerName: peer.name,
-      myColor: "w", status: "invited_out", moves: [], drawOfferedBy: null, winner: null, finishAction: null, updatedAt: Date.now()
+      myColor: "w", colorVerified: true, status: "invited_out", moves: [], drawOfferedBy: null, winner: null, finishAction: null, updatedAt: Date.now()
     };
     games[key] = g;
     selectedKey = key;
@@ -1175,7 +1176,8 @@ window.ommeshReady.then(async function (app) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  await app.ui.setActivities(buildActivities(games, app.context.locale));
+  if (normalizedOnLoad) await persist();
+  else await app.ui.setActivities(buildActivities(games, app.context.locale));
   render();
 });
 </script>
