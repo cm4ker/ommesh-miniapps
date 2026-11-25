@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "ommesh.battleship",
   "appId": 258,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": {
     "ru": "Морской бой",
     "en": "Battleship"

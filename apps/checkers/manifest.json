@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "ommesh.checkers",
   "appId": 257,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": {
     "ru": "Шашки",
     "en": "Checkers"

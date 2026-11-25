@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "ommesh.chess",
   "appId": 256,
-  "version": "1.4.1",
+  "version": "1.4.2",
   "name": {
     "ru": "Шахматы",
     "en": "Chess"

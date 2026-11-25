@@ -21,8 +21,10 @@ console.log(`Built ${catalog.length} .omapp packages into dist/.`);
 
 const writeBundles = process.argv.includes("--write");
 const SYNC_TARGETS = [
+  { slug: "chess", file: "chessBundle.ts", constPrefix: "CHESS", pkgExport: "chessPackage" },
   { slug: "checkers", file: "checkersBundle.ts", constPrefix: "CHECKERS", pkgExport: "checkersPackage" },
   { slug: "battleship", file: "battleshipBundle.ts", constPrefix: "BATTLESHIP", pkgExport: "battleshipPackage" },
+  { slug: "lora-calc", file: "loraCalcBundle.ts", constPrefix: null, pkgExport: "loraCalcPackage" },
 ];
 
 if (existsSync(ommeshDir)) {
@@ -31,8 +33,9 @@ if (existsSync(ommeshDir)) {
     for (const t of SYNC_TARGETS) {
       const appDir = join(ROOT, "apps", t.slug);
       const { pkg } = packAppDir(appDir);
-      const engineJs = readFileSync(join(appDir, "engine.js"), "utf8");
-      const out = [
+      const enginePath = join(appDir, "engine.js");
+      const hasEngine = t.constPrefix && existsSync(enginePath);
+      const lines = [
         `/**`,
         ` * Auto-synced from \`ommesh-miniapps/apps/${t.slug}\` (${pkg.manifest.id}, v${pkg.manifest.version}, appId = 0x${pkg.manifest.appId.toString(16).padStart(4, "0")}).`,
         ` * Run \`npm run sync-ommesh -- --write\` inside \`ommesh-miniapps\` after editing the app sources.`,
@@ -40,14 +43,16 @@ if (existsSync(ommeshDir)) {
         ``,
         `import type { MiniAppPackage } from "@ommesh/miniapp-sdk";`,
         ``,
-        `export const ${t.constPrefix}_APP_ID = 0x${pkg.manifest.appId.toString(16).padStart(4, "0")};`,
-        ``,
-        `export const ${t.constPrefix}_ENGINE_JS = ${JSON.stringify(engineJs)};`,
-        ``,
-        `export const ${t.pkgExport}: MiniAppPackage = ${JSON.stringify(pkg, null, 2)};`,
-        ``,
-      ].join("\n");
-      writeFileSync(join(ommeshDir, t.file), out, "utf8");
+      ];
+      if (t.constPrefix) {
+        lines.push(`export const ${t.constPrefix}_APP_ID = 0x${pkg.manifest.appId.toString(16).padStart(4, "0")};`, ``);
+      }
+      if (hasEngine) {
+        const engineJs = readFileSync(enginePath, "utf8");
+        lines.push(`export const ${t.constPrefix}_ENGINE_JS = ${JSON.stringify(engineJs)};`, ``);
+      }
+      lines.push(`export const ${t.pkgExport}: MiniAppPackage = ${JSON.stringify(pkg, null, 2)};`, ``);
+      writeFileSync(join(ommeshDir, t.file), lines.join("\n"), "utf8");
       console.log(`Synced ${t.file} (v${pkg.manifest.version})`);
     }
   } else {

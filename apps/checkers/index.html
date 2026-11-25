@@ -713,8 +713,16 @@ window.ommeshReady.then(async function (app) {
     }
   }
 
+  var pickingPeer = false;
   async function startNewGame() {
-    var peer = await app.peers.pick({ requirePeerData: true });
+    if (pickingPeer) return;
+    pickingPeer = true;
+    var peer = null;
+    try {
+      peer = await app.peers.pick({ requirePeerData: true });
+    } finally {
+      pickingPeer = false;
+    }
     if (!peer) return;
     var gid = Math.floor(Math.random() * 65534) + 1;
     var key = "g:" + gid.toString(16).padStart(4, "0");

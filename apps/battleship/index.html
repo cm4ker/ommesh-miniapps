@@ -868,8 +868,16 @@ window.ommeshReady.then(async function (app) {
     }
   }
 
+  var pickingPeer = false;
   async function startNewGame() {
-    var peer = await app.peers.pick({ requirePeerData: true });
+    if (pickingPeer) return;
+    pickingPeer = true;
+    var peer = null;
+    try {
+      peer = await app.peers.pick({ requirePeerData: true });
+    } finally {
+      pickingPeer = false;
+    }
     if (!peer) return;
     var gid = Math.floor(Math.random() * 65534) + 1;
     var key = "g:" + gid.toString(16).padStart(4, "0");
@@ -1453,10 +1461,10 @@ window.ommeshReady.then(async function (app) {
         setupMode: !g.myReady,
         previewSet: previewSet,
         previewOk: previewOk,
-        onCellHover: g.myReady ? null : function (cellIdx) {
+        onCellHover: (g.myReady || isTouchDevice()) ? null : function (cellIdx) {
           if (hoverCell !== cellIdx) { hoverCell = cellIdx; render(); }
         },
-        onBoardLeave: g.myReady ? null : function () {
+        onBoardLeave: (g.myReady || isTouchDevice()) ? null : function () {
           if (hoverCell !== -1) { hoverCell = -1; render(); }
         },
         onCellClick: g.myReady ? null : function (cellIdx) {
